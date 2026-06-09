@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>원소기호 리듬게임</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at center, #111827 0%, #030712 100%);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .neon-glow-pink {
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+        }
+        .neon-glow-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .beat-active {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.8);
+            background-color: #f43f5e !important;
+            color: #ffffff !important;
+        }
+        .beat-guide {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center text-white overflow-hidden p-4 select-none">
+
+    <!-- [1] 메인 타이틀 & 대기 화면 -->
+    <div id="screen-start" class="flex-grow w-full max-w-md flex flex-col justify-center items-center space-y-6 px-4">
+        <div class="text-center space-y-3">
+            <div class="inline-block bg-rose-500/10 text-rose-400 border border-rose-500/30 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest font-orbitron uppercase">
+                ⚛️ MIDDLE SCHOOL SCIENCE CLASS
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black text-rose-500 font-orbitron tracking-tight neon-glow-pink py-2">
+                원소기호 리듬게임
+            </h1>
+            <p class="text-gray-400 text-sm font-medium">
+                4박자 리듬에 맞춰 올바른 원소 기호를 터치하세요!
+            </p>
+        </div>
+
+        <div class="w-full bg-gray-900/80 border border-gray-800 rounded-3xl p-6 space-y-4 shadow-2xl backdrop-blur-md">
+            <!-- 학번 이름 입력 -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-400 tracking-wider">학번 이름 입력</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </span>
+                    <input type="text" id="input-student-name" placeholder="예: 20201 홍길동" 
+                           class="w-full bg-gray-950 border border-gray-800 text-white pl-11 pr-4 py-3 rounded-2xl font-bold placeholder-gray-600 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all text-center text-lg">
+                </div>
+            </div>
+
+            <!-- 난이도 선택 영역 -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-400 tracking-wider">난이도(속도) 선택</label>
+                <div class="grid grid-cols-3 gap-2" id="difficulty-selector">
+                    <button type="button" onclick="setDifficulty('easy')" id="btn-diff-easy" class="diff-btn py-2.5 rounded-xl text-xs font-bold border border-gray-800 bg-gray-950 text-gray-400 transition-all">
+                        쉬움 (0.7x)
+                    </button>
+                    <button type="button" onclick="setDifficulty('normal')" id="btn-diff-normal" class="diff-btn py-2.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-950/20 text-rose-400 transition-all">
+                        보통 (1.0x)
+                    </button>
+                    <button type="button" onclick="setDifficulty('hard')" id="btn-diff-hard" class="diff-btn py-2.5 rounded-xl text-xs font-bold border border-gray-800 bg-gray-950 text-gray-400 transition-all">
+                        어려움 (1.4x)
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-[11px] text-gray-400 py-1.5 border-t border-b border-gray-800/50">
+                <div class="flex items-center gap-2"><i class="fa-solid fa-music text-rose-500"></i> 속도: <span id="info-bpm" class="font-bold text-rose-400">95 BPM</span></div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-gamepad text-blue-500"></i> 라운드: 30회 제한</div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-atom text-yellow-500"></i> 수소~칼슘 + 3종</div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-award text-purple-500"></i> 틀릴 시 패널티 감점</div>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="onStartButtonClick()" 
+                        class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-4 rounded-2xl text-xl transition-all active:scale-98 shadow-lg shadow-rose-600/30 font-orbitron">
+                    리듬게임시작! <i class="fa-solid fa-play ml-1 text-sm"></i>
+                </button>
+                <button onclick="showLeaderboard()" 
+                        class="w-full bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold py-3.5 rounded-2xl text-sm transition-all border border-gray-700 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trophy text-yellow-500"></i> 순위보더 보기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [2] 인게임 인터페이스 -->
+    <div id="screen-game" class="hidden flex-grow w-full max-w-md flex flex-col justify-between py-2 px-2">
+        
+        <!-- 상단 헤더 정보 -->
+        <div class="flex justify-between items-center bg-gray-900/60 border border-gray-800 rounded-2xl px-4 py-3 shadow-md backdrop-blur-sm">
+            <div class="flex items-center gap-2">
+                <span id="ui-student-display" class="text-xs bg-gray-800 border border-gray-700 px-3 py-1.5 rounded-xl font-bold text-gray-300">
+                    대기 중
+                </span>
+            </div>
+            <div class="flex gap-4">
+                <div class="text-right">
+                    <span class="block text-[9px] text-gray-500 font-bold tracking-wider">ROUND</span>
+                    <span id="game-round" class="text-md font-extrabold text-blue-400 font-orbitron">0/30</span>
+                </div>
+                <div class="text-right">
+                    <span class="block text-[9px] text-gray-500 font-bold tracking-wider">SCORE</span>
+                    <span id="game-score" class="text-md font-extrabold text-emerald-400 font-orbitron">0</span>
+                </div>
+                <div class="text-right">
+                    <span class="block text-[9px] text-gray-500 font-bold tracking-wider">COMBO</span>
+                    <span id="game-combo" class="text-md font-extrabold text-amber-400 font-orbitron">0</span>
+                </div>
+            </div>
+            <button onclick="showLeaderboard()" class="bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold border border-gray-700 flex items-center gap-1.5 text-gray-300">
+                <i class="fa-solid fa-trophy text-yellow-500 text-[10px]"></i> 순위보더
+            </button>
+        </div>
+
+        <!-- 4박자 비트 인디케이터 -->
+        <div class="grid grid-cols-4 gap-2.5 w-full my-4">
+            <div id="beat-box-0" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
+                <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 1</span>
+                <span class="text-xs font-black text-rose-400">출제 (쿵)</span>
+            </div>
+            <div id="beat-box-1" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
+                <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 2</span>
+                <span class="text-xs font-black text-rose-400">대기 (짝)</span>
+            </div>
+            <div id="beat-box-2" class="h-14 bg-rose-950/20 border-2 border-rose-500/40 rounded-2xl flex flex-col justify-center items-center transition-all duration-75 relative">
+                <span class="text-[10px] text-rose-400 font-bold font-orbitron">BEAT 3</span>
+                <span class="text-xs font-black text-rose-400 animate-pulse">입력 (쿵!)</span>
+                <div class="absolute -inset-1 border border-rose-500/30 rounded-2xl animate-ping opacity-30"></div>
+            </div>
+            <div id="beat-box-3" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
+                <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 4</span>
+                <span class="text-xs font-black text-rose-400">결과 (짝)</span>
+            </div>
+        </div>
+
+        <!-- 메인 질문 카드 영역 -->
+        <div class="flex-grow flex flex-col justify-center items-center bg-gray-950 border border-gray-800/80 rounded-3xl p-6 shadow-inner relative my-2 overflow-hidden">
+            <div class="absolute inset-0 bg-[linear-gradient(to_right,#1f293710_1px,transparent_1px),linear-gradient(to_bottom,#1f293710_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+            
+            <div class="z-10 text-center space-y-4">
+                <div id="question-number" class="inline-block bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3.5 py-1 rounded-full text-xs font-black font-orbitron">
+                    ELEMENT NO. --
+                </div>
+                <h2 id="question-name" class="text-6xl md:text-7xl font-extrabold tracking-tight text-white transition-transform duration-100">
+                    준비!
+                </h2>
+                <div class="h-8 flex justify-center items-center">
+                    <p id="judgment-feedback" class="text-xl font-black italic uppercase tracking-widest text-rose-500"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4지 선다형 보기 버튼 -->
+        <div class="grid grid-cols-2 gap-3 mt-2">
+            <button onclick="submitAnswer(0, this)" class="choice-btn h-20 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-2xl text-3xl font-black font-orbitron transition-all active:scale-95 disabled:opacity-40">
+                -
+            </button>
+            <button onclick="submitAnswer(1, this)" class="choice-btn h-20 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-2xl text-3xl font-black font-orbitron transition-all active:scale-95 disabled:opacity-40">
+                -
+            </button>
+            <button onclick="submitAnswer(2, this)" class="choice-btn h-20 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-2xl text-3xl font-black font-orbitron transition-all active:scale-95 disabled:opacity-40">
+                -
+            </button>
+            <button onclick="submitAnswer(3, this)" class="choice-btn h-20 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-2xl text-3xl font-black font-orbitron transition-all active:scale-95 disabled:opacity-40">
+                -
+            </button>
+        </div>
+    </div>
+
+    <!-- [3] 푸터 저작권 표시 -->
+    <footer class="w-full text-center text-[10px] text-gray-600 font-semibold py-1">
+        © Middle School Science Class - Elements Rhythm Game
+    </footer>
+
+    <!-- [4] 실시간 순위보더 모달 -->
+    <div id="modal-leaderboard" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-gray-950 border border-gray-800 w-full max-w-sm rounded-3xl overflow-hidden flex flex-col shadow-2xl max-h-[80vh]">
+            <div class="p-5 border-b border-gray-900 flex justify-between items-center bg-gray-900/30">
+                <h3 class="text-lg font-bold text-yellow-500 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy"></i> 실시간 순위보더
+                </h3>
+                <button onclick="closeLeaderboard()" class="text-gray-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="leaderboard-list" class="flex-grow overflow-y-auto p-4 space-y-2.5 min-h-[250px]">
+                <div class="text-center text-gray-500 py-12">
+                    <i class="fa-solid fa-spinner animate-spin text-2xl text-rose-500 mb-2 block"></i>
+                    순위 정보를 읽어오는 중...
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-900 bg-gray-900/10 text-center text-xs text-gray-500">
+                상위 20명의 학번 이름과 점수가 표출됩니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- [5] 커스텀 얼럿/안내 모달 (alert 우회용) -->
+    <div id="modal-alert" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-xs rounded-2xl p-6 text-center space-y-4">
+            <div class="text-rose-500 text-3xl"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <p id="alert-message" class="text-sm font-semibold text-gray-200 whitespace-pre-line"></p>
+            <button onclick="closeAlert()" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all">
+                확인
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🛠️ [구글 스프레드시트 배포 후 아래 URL 교체 필수!]
+        // ==========================================
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby3jMFMPRonn37UfMYSXq6OooIomAKIolyTEG5yMsaEdnRQhmIGU2AjOHy_qXNNsN84/exec";
+
+        // 게임 구성 원소 배열 (1~20번 + 망가니즈, 철, 구리 추가)
+        const MASTER_ELEMENTS = [
+            { n: 1, k: "수소", s: "H" }, { n: 2, k: "헬륨", s: "He" }, { n: 3, k: "리튬", s: "Li" }, { n: 4, k: "베릴륨", s: "Be" },
+            { n: 5, k: "붕소", s: "B" }, { n: 6, k: "탄소", s: "C" }, { n: 7, k: "질소", s: "N" }, { n: 8, k: "산소", s: "O" },
+            { n: 9, k: "플루오린", s: "F" }, { n: 10, k: "네온", s: "Ne" }, { n: 11, k: "나트륨", s: "Na" }, { n: 12, k: "마그네슘", s: "Mg" },
+            { n: 13, k: "알루미늄", s: "Al" }, { n: 14, k: "규소", s: "Si" }, { n: 15, k: "인", s: "P" }, { n: 16, k: "황", s: "S" },
+            { n: 17, k: "염소", s: "Cl" }, { n: 18, k: "아르곤", s: "Ar" }, { n: 19, k: "칼륨", s: "K" }, { n: 20, k: "칼슘", s: "Ca" },
+            { n: 25, k: "망가니즈", s: "Mn" }, { n: 26, k: "철", s: "Fe" }, { n: 29, k: "구리", s: "Cu" }
+        ];
+
+        // 게임 상태 저장
+        let gameConfig = {
+            studentName: "",
+            score: 0,
+            combo: 0,
+            currentRound: 0,
+            maxRounds: 30, // 30라운드 고정
+            isPlaying: false,
+            currentElement: null,
+            choices: [],
+            hasAnsweredThisRound: false,
+            currentBeatIndex: 0, // 0~3 (4박자 인덱스)
+            difficulty: "normal", // easy, normal, hard
+            tempoBpm: 95, // BPM 설정
+            rhythmTimer: null,
+            webAudioCtx: null,
+            timingCorrect: false
+        };
+
+        // 커스텀 알림 처리
+        function showAlert(msg) {
+            document.getElementById('alert-message').innerText = msg;
+            document.getElementById('modal-alert').classList.remove('hidden');
+        }
+        function closeAlert() {
+            document.getElementById('modal-alert').classList.add('hidden');
+        }
+
+        // 난이도 선택 제어
+        function setDifficulty(diff) {
+            gameConfig.difficulty = diff;
+            const btnEasy = document.getElementById('btn-diff-easy');
+            const btnNormal = document.getElementById('btn-diff-normal');
+            const btnHard = document.getElementById('btn-diff-hard');
+            const infoBpm = document.getElementById('info-bpm');
+
+            // 기본 스타일 일괄 초기화
+            [btnEasy, btnNormal, btnHard].forEach(btn => {
+                btn.className = "diff-btn py-2.5 rounded-xl text-xs font-bold border border-gray-800 bg-gray-950 text-gray-400 transition-all";
+            });
+
+            // 난이도별 스타일 & 정보 갱신
+            if (diff === 'easy') {
+                gameConfig.tempoBpm = 80;
+                infoBpm.innerText = "80 BPM (쉬움)";
+                infoBpm.className = "font-bold text-emerald-400";
+                btnEasy.className = "diff-btn py-2.5 rounded-xl text-xs font-bold border border-emerald-500/50 bg-emerald-950/20 text-emerald-400 transition-all";
+            } else if (diff === 'normal') {
+                gameConfig.tempoBpm = 95;
+                infoBpm.innerText = "95 BPM (보통)";
+                infoBpm.className = "font-bold text-rose-400";
+                btnNormal.className = "diff-btn py-2.5 rounded-xl text-xs font-bold border border-rose-500/50 bg-rose-950/20 text-rose-400 transition-all";
+            } else if (diff === 'hard') {
+                gameConfig.tempoBpm = 115;
+                infoBpm.innerText = "115 BPM (어려움)";
+                infoBpm.className = "font-bold text-amber-400";
+                btnHard.className = "diff-btn py-2.5 rounded-xl text-xs font-bold border border-amber-500/50 bg-amber-950/20 text-amber-400 transition-all";
+            }
+        }
+
+        // 게임 시작 진입점
+        function onStartButtonClick() {
+            const nameInput = document.getElementById('input-student-name').value.trim();
+            if (!nameInput) {
+                showAlert("학번과 이름을 꼭 입력해 주세요!\n(예: 20201 홍길동)");
+                return;
+            }
+            gameConfig.studentName = nameInput;
+            
+            const diffText = gameConfig.difficulty === 'easy' ? '쉬움' : gameConfig.difficulty === 'normal' ? '보통' : '어려움';
+            document.getElementById('ui-student-display').innerText = `${nameInput} [${diffText}]`;
+
+            // 오디오 사용 승인용 초기화
+            if (!gameConfig.webAudioCtx) {
+                gameConfig.webAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // 시작 처리
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            startRhythmGame();
+        }
+
+        // 리듬 게임 루프 가동
+        function startRhythmGame() {
+            gameConfig.score = 0;
+            gameConfig.combo = 0;
+            gameConfig.currentRound = 0;
+            gameConfig.isPlaying = true;
+            gameConfig.currentBeatIndex = 0;
+            
+            updateScoreUI();
+            
+            const beatDuration = (60 / gameConfig.tempoBpm) * 1000;
+            
+            // 핵심 리듬 타이머 엔진 가동
+            gameConfig.rhythmTimer = setInterval(() => {
+                if (!gameConfig.isPlaying) return;
+                processRhythmTick();
+            }, beatDuration);
+            
+            // 첫번째 틱 즉각 가동
+            processRhythmTick();
+        }
+
+        // 박자 순환 관리
+        function processRhythmTick() {
+            const currentBeat = gameConfig.currentBeatIndex;
+            
+            // 모든 비트박스 시각 요소 초기화
+            for (let i = 0; i < 4; i++) {
+                const box = document.getElementById(`beat-box-${i}`);
+                box.classList.remove('beat-active', 'beat-guide');
+            }
+
+            // 활성화 비트 색상 및 클래스 지정
+            const currentBox = document.getElementById(`beat-box-${currentBeat}`);
+            if (currentBeat === 2) {
+                currentBox.classList.add('beat-guide');
+            } else {
+                currentBox.classList.add('beat-active');
+            }
+
+            // 사운드 비트 재생 (드럼 비트 합성음)
+            playElectronicClick(currentBeat);
+
+            // [박자 1]: 신규 문제 출제
+            if (currentBeat === 0) {
+                gameConfig.currentRound++;
+                if (gameConfig.currentRound > gameConfig.maxRounds) {
+                    endTheRhythmGame();
+                    return;
+                }
+                
+                gameConfig.hasAnsweredThisRound = false;
+                gameConfig.timingCorrect = false;
+                
+                // 새로운 원소 선택 및 선지 믹스
+                gameConfig.currentElement = MASTER_ELEMENTS[Math.floor(Math.random() * MASTER_ELEMENTS.length)];
+                gameConfig.choices = makeChoiceOptions(gameConfig.currentElement);
+                
+                // UI 업데이트
+                document.getElementById('game-round').innerText = `${gameConfig.currentRound}/${gameConfig.maxRounds}`;
+                document.getElementById('question-number').innerText = `ELEMENT NO. ${gameConfig.currentElement.n}`;
+                document.getElementById('question-name').innerText = gameConfig.currentElement.k;
+                document.getElementById('judgment-feedback').innerText = "";
+                
+                renderChoiceButtons();
+            }
+
+            // [박자 3]: 정답 타이밍 구간 진입
+            if (currentBeat === 2) {
+                gameConfig.timingCorrect = true; // 이 박자 동안만 정답 판정 가능!
+            }
+
+            // [박자 4]: 정답을 끝까지 누르지 않았을 때 미스 판정 처리
+            if (currentBeat === 3) {
+                gameConfig.timingCorrect = false;
+                if (!gameConfig.hasAnsweredThisRound) {
+                    evaluateAnswerResult(false);
+                }
+            }
+
+            // 다음 박자로 인덱스 순환
+            gameConfig.currentBeatIndex = (gameConfig.currentBeatIndex + 1) % 4;
+        }
+
+        // 4지 선다형 문항 셔플 생성
+        function makeChoiceOptions(correctEl) {
+            let options = [correctEl];
+            let listToPick = MASTER_ELEMENTS.filter(e => e.s !== correctEl.s);
+            
+            listToPick.sort(() => Math.random() - 0.5);
+            for (let i = 0; i < 3; i++) {
+                options.push(listToPick[i]);
+            }
+            
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        // 보기 UI 버튼에 원소 기호 적용
+        function renderChoiceButtons() {
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach((btn, idx) => {
+                btn.innerText = gameConfig.choices[idx].s;
+                btn.className = "choice-btn h-20 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-2xl text-3xl font-black font-orbitron transition-all active:scale-95 disabled:opacity-40 text-rose-400";
+                btn.disabled = false;
+            });
+        }
+
+        // 학생의 원소 클릭 판정 처리
+        function submitAnswer(chosenIdx, elementBtn) {
+            if (gameConfig.hasAnsweredThisRound || !gameConfig.isPlaying) return;
+            gameConfig.hasAnsweredThisRound = true;
+
+            const buttons = document.querySelectorAll('.choice-btn');
+            buttons.forEach(btn => btn.disabled = true);
+
+            const isSymbolCorrect = (gameConfig.choices[chosenIdx].s === gameConfig.currentElement.s);
+            const isTimingCorrect = gameConfig.timingCorrect;
+
+            if (isSymbolCorrect && isTimingCorrect) {
+                elementBtn.className = "choice-btn h-20 bg-emerald-950/80 border-2 border-emerald-400 rounded-2xl text-3xl font-black font-orbitron text-emerald-300 shadow-md shadow-emerald-500/20";
+                evaluateAnswerResult(true);
+            } else {
+                elementBtn.className = "choice-btn h-20 bg-rose-950/80 border-2 border-rose-500/80 rounded-2xl text-3xl font-black font-orbitron text-rose-300 shadow-md shadow-rose-500/20";
+                evaluateAnswerResult(false, !isTimingCorrect ? "BAD TIMING" : "WRONG SYMBOL");
+            }
+        }
+
+        // 점수 계산 및 콤보 갱신 (난이도 가중치 & 틀릴 시 감점 적용)
+        function evaluateAnswerResult(success, reason = "") {
+            const fdbk = document.getElementById('judgment-feedback');
+            
+            // 난이도 세팅
+            let multiplier = 1.0;
+            let deduction = 20; // 기본 패널티
+            
+            if (gameConfig.difficulty === 'easy') {
+                multiplier = 0.7;
+                deduction = 10;
+            } else if (gameConfig.difficulty === 'normal') {
+                multiplier = 1.0;
+                deduction = 20;
+            } else if (gameConfig.difficulty === 'hard') {
+                multiplier = 1.4;
+                deduction = 35;
+            }
+            
+            if (success) {
+                gameConfig.combo++;
+                const basePoints = 100 + (gameConfig.combo * 15);
+                const addedPoints = Math.round(basePoints * multiplier);
+                gameConfig.score += addedPoints;
+                
+                fdbk.innerText = `PERFECT! +${addedPoints} 🔥`;
+                fdbk.className = "text-xl font-black italic uppercase tracking-widest text-emerald-400";
+            } else {
+                gameConfig.combo = 0;
+                // 패널티 차감 (단, 0점 미만으로 내려가지 않음)
+                gameConfig.score = Math.max(0, gameConfig.score - deduction);
+                
+                let feedbackText = reason === "BAD TIMING" ? "MISS (박자 미스! ☁️)" : "MISS (틀림! ❌)";
+                fdbk.innerText = `${feedbackText} -${deduction}`;
+                fdbk.className = "text-lg font-bold italic tracking-wider text-rose-400";
+            }
+            
+            updateScoreUI();
+        }
+
+        function updateScoreUI() {
+            document.getElementById('game-score').innerText = gameConfig.score;
+            document.getElementById('game-combo').innerText = gameConfig.combo;
+        }
+
+        // Web Audio API 기반 오디오 신디사이저 쿵짝 비트음 생성
+        function playElectronicClick(beatIdx) {
+            if (!gameConfig.webAudioCtx) return;
+            
+            const ctx = gameConfig.webAudioCtx;
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            
+            if (beatIdx % 2 === 0) {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(110, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.16);
+            } else {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(330, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.11);
+            }
+        }
+
+        // 30라운드 완료 시 종료 제어
+        function endTheRhythmGame() {
+            gameConfig.isPlaying = false;
+            if (gameConfig.rhythmTimer) {
+                clearInterval(gameConfig.rhythmTimer);
+            }
+
+            showAlert(`🎉 대단해요! 모든 리듬이 끝났습니다!\n최종 점수: ${gameConfig.score}점`);
+
+            // 구글 스프레드시트에 전송할 최종 이름 구성 (학번이름 [난이도])
+            const diffText = gameConfig.difficulty === 'easy' ? '쉬움' : gameConfig.difficulty === 'normal' ? '보통' : '어려움';
+            const submittedName = `${gameConfig.studentName} [${diffText}]`;
+
+            // 구글 스프레드시트로 즉시 비동기 데이터 기록 전송
+            postScoreDataToGAS(submittedName, gameConfig.score);
+
+            // 딜레이 후 메인화면 리로드
+            setTimeout(() => {
+                document.getElementById('screen-game').classList.add('hidden');
+                document.getElementById('screen-start').classList.remove('hidden');
+                document.getElementById('input-student-name').value = "";
+                document.getElementById('judgment-feedback').innerText = "";
+                document.getElementById('question-name').innerText = "대기중";
+            }, 3000);
+        }
+
+        // GAS 서버 POST 호출
+        function postScoreDataToGAS(studentInfo, finalScore) {
+            if (!GAS_WEB_APP_URL.startsWith("https://")) {
+                console.warn("GAS URL이 정의되지 않았습니다.");
+                return;
+            }
+
+            const payload = {
+                studentInfo: studentInfo,
+                score: parseInt(finalScore, 10)
+            };
+
+            fetch(GAS_WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(() => console.log("구글 스프레드시트에 기록되었습니다."))
+            .catch(err => console.error("데이터 기록 전송 실패:", err));
+        }
+
+        // 순위보더 팝업 표출 & 실시간 정보 취득 (GET 호출)
+        function showLeaderboard() {
+            document.getElementById('modal-leaderboard').classList.remove('hidden');
+            const listContainer = document.getElementById('leaderboard-list');
+            
+            if (!GAS_WEB_APP_URL.startsWith("https://") || GAS_WEB_APP_URL.includes("A2A2A2A2A2")) {
+                listContainer.innerHTML = `
+                    <div class="text-center text-rose-400 py-10 font-semibold text-xs space-y-2">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                        <p>구글 앱 스크립트(GAS) 연동 전입니다.</p>
+                        <p class="text-gray-500 font-normal">코드 내부의 'GAS_WEB_APP_URL'을<br>실제 배포된 주소로 교체해주세요!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            fetch(GAS_WEB_APP_URL)
+                .then(response => {
+                    if (!response.ok) throw new Error();
+                    return response.json();
+                })
+                .then(rawList => {
+                    if (!rawList || rawList.length === 0) {
+                        listContainer.innerHTML = `<p class="text-center text-gray-500 py-12">아직 기록된 점수가 없습니다. 1등에 도전해보세요!</p>`;
+                        return;
+                    }
+
+                    // 순위 정보 렌더링
+                    let htmlContent = "";
+                    rawList.forEach((row, rankIdx) => {
+                        const rankNum = rankIdx + 1;
+                        let decoration = "text-gray-300";
+                        let medal = "";
+                        
+                        if (rankNum === 1) { decoration = "text-yellow-400 font-black"; medal = "🥇 "; }
+                        else if (rankNum === 2) { decoration = "text-slate-300 font-black"; medal = "🥈 "; }
+                        else if (rankNum === 3) { decoration = "text-amber-600 font-black"; medal = "🥉 "; }
+
+                        htmlContent += `
+                            <div class="flex justify-between items-center bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3 shadow-sm hover:border-gray-700 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-black font-orbitron w-6 text-center ${decoration}">${rankNum}</span>
+                                    <span class="font-bold text-sm text-gray-200">${medal}${row[0]}</span>
+                                </div>
+                                <span class="font-black font-orbitron text-sm text-emerald-400">${row[1]}점</span>
+                            </div>
+                        `;
+                    });
+
+                    listContainer.innerHTML = htmlContent;
+                })
+                .catch(err => {
+                    listContainer.innerHTML = `
+                        <p class="text-center text-rose-500 py-12 text-xs">
+                            <i class="fa-solid fa-triangle-exclamation text-lg mb-2 block"></i>
+                            데이터를 수집하는 데 실패했습니다.<br>구글 시트 연동 설정을 다시 확인해주세요.
+                        </p>
+                    `;
+                });
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('modal-leaderboard').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
