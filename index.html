@@ -135,7 +135,7 @@
             </button>
         </div>
 
-        <!-- 4박자 비트 인디케이터 -->
+        <!-- 4박자 비트 인디케이터 (요청사항 반영: "쿵쿵쿵짝" 리듬 패턴 구축 및 BEAT 4에 정답입력 포커싱) -->
         <div class="grid grid-cols-4 gap-2.5 w-full my-4">
             <div id="beat-box-0" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
                 <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 1</span>
@@ -143,16 +143,17 @@
             </div>
             <div id="beat-box-1" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
                 <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 2</span>
-                <span class="text-xs font-black text-rose-400">대기 (짝)</span>
+                <span class="text-xs font-black text-rose-400">대기 (쿵)</span>
             </div>
-            <div id="beat-box-2" class="h-14 bg-rose-950/20 border-2 border-rose-500/40 rounded-2xl flex flex-col justify-center items-center transition-all duration-75 relative">
-                <span class="text-[10px] text-rose-400 font-bold font-orbitron">BEAT 3</span>
-                <span class="text-xs font-black text-rose-400 animate-pulse">입력 (쿵!)</span>
+            <div id="beat-box-2" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
+                <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 3</span>
+                <span class="text-xs font-black text-rose-400">대기 (쿵)</span>
+            </div>
+            <div id="beat-box-3" class="h-14 bg-rose-950/20 border-2 border-rose-500/40 rounded-2xl flex flex-col justify-center items-center transition-all duration-75 relative">
+                <!-- 입력 박자가 4번째 박자(짝!)로 이동 -->
+                <span class="text-[10px] text-rose-400 font-bold font-orbitron">BEAT 4</span>
+                <span class="text-xs font-black text-rose-400 animate-pulse">입력 (짝!)</span>
                 <div class="absolute -inset-1 border border-rose-500/30 rounded-2xl animate-ping opacity-30"></div>
-            </div>
-            <div id="beat-box-3" class="h-14 bg-gray-900/80 border border-gray-800 rounded-2xl flex flex-col justify-center items-center transition-all duration-75">
-                <span class="text-[10px] text-gray-500 font-bold font-orbitron">BEAT 4</span>
-                <span class="text-xs font-black text-rose-400">결과 (짝)</span>
             </div>
         </div>
 
@@ -235,8 +236,7 @@
         // ==========================================
         // 🛠️ [구글 스프레드시트 배포 후 아래 URL 교체 필수!]
         // ==========================================
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby3jMFMPRonn37UfMYSXq6OooIomAKIolyTEG5yMsaEdnRQhmIGU2AjOHy_qXNNsN84/exec";
-
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx4YQF-V6f04Pdp6odheD8LWA8woAOweKodmEkQytGqGj4dSFAhZx7KPndYdX31L-w/exec"
         // 게임 구성 원소 배열 (1~20번 + 망가니즈, 철, 구리 추가)
         const MASTER_ELEMENTS = [
             { n: 1, k: "수소", s: "H" }, { n: 2, k: "헬륨", s: "He" }, { n: 3, k: "리튬", s: "Li" }, { n: 4, k: "베릴륨", s: "Be" },
@@ -353,7 +353,7 @@
             processRhythmTick();
         }
 
-        // 박자 순환 관리
+        // 박자 순환 관리 (정답 타이밍을 4번째 박자인 BEAT 4로 이동)
         function processRhythmTick() {
             const currentBeat = gameConfig.currentBeatIndex;
             
@@ -365,17 +365,22 @@
 
             // 활성화 비트 색상 및 클래스 지정
             const currentBox = document.getElementById(`beat-box-${currentBeat}`);
-            if (currentBeat === 2) {
-                currentBox.classList.add('beat-guide');
+            if (currentBeat === 3) {
+                currentBox.classList.add('beat-guide'); // BEAT 4는 파란색 가이드(정답 구간)
             } else {
-                currentBox.classList.add('beat-active');
+                currentBox.classList.add('beat-active'); // BEAT 1, 2, 3은 분홍색 활성화
             }
 
-            // 사운드 비트 재생 (드럼 비트 합성음)
+            // 사운드 비트 재생 (쿵쿵쿵짝 구현)
             playElectronicClick(currentBeat);
 
             // [박자 1]: 신규 문제 출제
             if (currentBeat === 0) {
+                // 이전 판(BEAT 4)에 문제를 끝까지 풀지 않았을 경우 패널티 처리
+                if (gameConfig.currentRound > 0 && !gameConfig.hasAnsweredThisRound) {
+                    evaluateAnswerResult(false);
+                }
+
                 gameConfig.currentRound++;
                 if (gameConfig.currentRound > gameConfig.maxRounds) {
                     endTheRhythmGame();
@@ -398,17 +403,11 @@
                 renderChoiceButtons();
             }
 
-            // [박자 3]: 정답 타이밍 구간 진입
-            if (currentBeat === 2) {
-                gameConfig.timingCorrect = true; // 이 박자 동안만 정답 판정 가능!
-            }
-
-            // [박자 4]: 정답을 끝까지 누르지 않았을 때 미스 판정 처리
+            // [박자 4]: 정답 타이밍 구간 진입 (BEAT 4 / index 3)
             if (currentBeat === 3) {
-                gameConfig.timingCorrect = false;
-                if (!gameConfig.hasAnsweredThisRound) {
-                    evaluateAnswerResult(false);
-                }
+                gameConfig.timingCorrect = true; // 이 박자 동안만 정답 판정 가능!
+            } else {
+                gameConfig.timingCorrect = false; // 다른 박자에서는 불인정
             }
 
             // 다음 박자로 인덱스 순환
@@ -503,7 +502,7 @@
             document.getElementById('game-combo').innerText = gameConfig.combo;
         }
 
-        // Web Audio API 기반 오디오 신디사이저 쿵짝 비트음 생성
+        // Web Audio API 기반 오디오 신디사이저: 쿵쿵쿵짝(볼륨 대폭 강화형)
         function playElectronicClick(beatIdx) {
             if (!gameConfig.webAudioCtx) return;
             
@@ -518,20 +517,23 @@
             osc.connect(gainNode);
             gainNode.connect(ctx.destination);
             
-            if (beatIdx % 2 === 0) {
+            // 쿵쿵쿵짝 구현 (0, 1, 2는 쿵 / 3은 짝)
+            if (beatIdx < 3) {
+                // "쿵" 사운드 (저역 드럼 킥 느낌 - 100Hz)
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(110, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.5, ctx.currentTime); // 볼륨 증가 (0.2 -> 0.5)
+                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.21);
+            } else {
+                // "짝" 사운드 (스네어 클랩 느낌 - 380Hz)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(380, ctx.currentTime);
+                gainNode.gain.setValueAtTime(0.4, ctx.currentTime); // 볼륨 증가 (0.12 -> 0.4)
                 gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
                 osc.start();
                 osc.stop(ctx.currentTime + 0.16);
-            } else {
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(330, ctx.currentTime);
-                gainNode.gain.setValueAtTime(0.12, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.11);
             }
         }
 
